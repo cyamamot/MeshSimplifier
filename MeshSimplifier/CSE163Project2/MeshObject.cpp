@@ -28,9 +28,6 @@ MeshObject::MeshObject(const char* filename) {
 		vertList[i]->cleanMesh();
 	}
 	setVertexNormals();
-
-
-	std::cout << "here" << std::endl;
 }
 
 void MeshObject::setVertices(std::vector<float>& v, std::ifstream& infile) {

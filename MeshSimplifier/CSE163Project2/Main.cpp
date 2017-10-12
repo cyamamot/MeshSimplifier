@@ -345,6 +345,8 @@ void instructions() {
 	std::cout << "press 'q' simplify/unsimplify mesh (up, down)" << std::endl;
 	std::cout << "press 'i' to perform an edge collapse between two specific vertices" << std::endl;
 	std::cout << std::endl;
+	std::cout << "CAUTION : If wrong filepath is specified, or if file is not of type .OFF, program will crash" << std::endl;;
+	std::cout << std::endl;
 	std::cout << "input file name : ";
 	std::cin >> name;
 	PATH_TO_OFF_FILE = name.c_str();

@@ -11,9 +11,9 @@ Face::Face(Vertex*& one, Vertex*& two, Vertex*& three) {
 }
 
 bool Face::isDegenerate() {
-	vec3 v0Position = (vertices[0])->position;
-	vec3 v1Position = (vertices[1])->position;
-	vec3 v2Position = (vertices[2])->position;
+	vec3 v0Position = (vertices[0])->getPosition();
+	vec3 v1Position = (vertices[1])->getPosition();
+	vec3 v2Position = (vertices[2])->getPosition();
 	if (v0Position[0] == v1Position[0] && v0Position[1] == v1Position[1] && v0Position[2] == v1Position[2]) return true;
 	if (v0Position[0] == v2Position[0] && v0Position[1] == v2Position[1] && v0Position[2] == v2Position[2]) return true;
 	if (v2Position[0] == v1Position[0] && v2Position[1] == v1Position[1] && v2Position[2] == v1Position[2]) return true;
@@ -22,9 +22,9 @@ bool Face::isDegenerate() {
 
 void Face::setNewVertForFace(Vertex* const oldVert, Vertex* const& newVert) {
 	for (unsigned int i = 0; i < vertices.size(); i++) {
-		if ((vertices[i])->position[0] == oldVert->position[0] &&
-			(vertices[i])->position[1] == oldVert->position[1] &&
-			(vertices[i])->position[2] == oldVert->position[2]) {
+		if ((vertices[i])->getPosition()[0] == oldVert->getPosition()[0] &&
+			(vertices[i])->getPosition()[1] == oldVert->getPosition()[1] &&
+			(vertices[i])->getPosition()[2] == oldVert->getPosition()[2]) {
 			vertices[i] = newVert;
 			return;
 		}
@@ -33,13 +33,13 @@ void Face::setNewVertForFace(Vertex* const oldVert, Vertex* const& newVert) {
 }
 
 void Face::updateFace() {
-	vec3 V = vertices[1]->position - vertices[0]->position;
-	vec3 W = vertices[2]->position - vertices[0]->position;
+	vec3 V = vertices[1]->getPosition() - vertices[0]->getPosition();
+	vec3 W = vertices[2]->getPosition() - vertices[0]->getPosition();
 	normal = normalize(glm::cross(V, W));
 	float a = normal[0];
 	float b = normal[1];
 	float c = normal[2];
-	float d = glm::dot(-(vertices[0]->position), normal);
+	float d = glm::dot(-(vertices[0]->getPosition()), normal);
 	K[0] = { a * a, a * b, a * c, a * d };
 	K[1] = { b * a, b * b, b * c, b * d };
 	K[2] = { c * a, c * b, c * c, c * d };
@@ -48,4 +48,52 @@ void Face::updateFace() {
 
 void Face::setNotUsed() {
 	isUsed = false;
+}
+
+int Face::getIndex() {
+	return index;
+}
+
+void Face::setIndex(int ind) {
+	index = ind;
+}
+
+Vertex* Face::getVertex(int ind) {
+	return vertices[ind];
+}
+
+void Face::setVertex(int ind, Vertex* vert) {
+	vertices[ind] = vert;
+}
+
+vec3 Face::getNormal() {
+	return normal;
+}
+
+void Face::setNormal(vec3 norm) {
+	normal = norm;
+}
+
+vec3 Face::getColor() {
+	return Color;
+}
+
+void Face::setColor(vec3 col) {
+	Color = col;
+}
+
+int Face::getVectorIndex() {
+	return vectorIndex;
+}
+
+void Face::setVectorIndex(int vecInd) {
+	vectorIndex = vecInd;
+}
+
+bool Face::getIsUsed() {
+	return isUsed;
+}
+
+void Face::setIsUsed(bool use) {
+	isUsed = use;
 }

@@ -307,6 +307,7 @@ void specialKey(int key, int x, int y) {
 			std::clock_t start;
 			double duration;
 			start = std::clock();
+			std::cout << "starting simplification" << std::endl;
 			object->quadricSimplification();
 			duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
 			std::cout << "done simplifying : " << duration << std::endl;
@@ -327,6 +328,7 @@ void specialKey(int key, int x, int y) {
 			std::clock_t start;
 			double duration;
 			start = std::clock();
+			std::cout << "starting unsimplification" << std::endl;
 			object->quadricUnsimplification();
 			duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
 			std::cout << "done unsimplifying : " << duration << std::endl;

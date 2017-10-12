@@ -1,6 +1,62 @@
 #include "Vertex.h"
 #include "Face.h"
 
+int Vertex::getIndex() {
+	return index;
+}
+
+void Vertex::setIndex(int ind) {
+	index = ind;
+}
+
+vec3 Vertex::getPosition() {
+	return position;
+}
+
+void Vertex::setPosition(vec3 pos) {
+	position = pos;
+}
+
+vec3 Vertex::getNormal() {
+	return normal;
+}
+
+Face* Vertex::getFace(int ind) {
+	return adjacentFaces[ind];
+}
+
+int Vertex::getAdjacentFaceListSize() {
+	return adjacentFaces.size();
+}
+
+Vertex* Vertex::getVertex(int ind) {
+	return adjacentVertices[ind];
+}
+
+int Vertex::getAdjacentVertexListSize() {
+	return adjacentVertices.size();
+}
+
+void Vertex::pushFace(Face* face) {
+	adjacentFaces.push_back(face);
+}
+
+void Vertex::pushVertex(Vertex* vert) {
+	adjacentVertices.push_back(vert);
+}
+
+bool Vertex::getIsUsed() {
+	return isUsed;
+}
+
+void Vertex::setIsUsed(bool set) {
+	isUsed = set;
+}
+
+void Vertex::setReplacedBy(Vertex* rep) {
+	replacedBy = rep;
+}
+
 void Vertex::absorb(Vertex*& vert1, Vertex*& vert2) {
 	for (unsigned int i = 0; i < vert1->adjacentVertices.size(); i++) {
 		Vertex* temp1 = vert1->adjacentVertices[i];
@@ -55,7 +111,7 @@ void Vertex::revertVertex() {
 	for (int j = 0; j < adjacentFaces.size(); j++) {
 			adjacentFaces[j]->setNewVertForFace(replacedBy, this);
 			if (adjacentFaces[j]->isDegenerate() == false) {
-				adjacentFaces[j]->isUsed = true;
+				adjacentFaces[j]->setIsUsed(true);
 			}
 	}
 	replacedBy->isUsed = false;
@@ -79,11 +135,11 @@ void Vertex::cleanMesh() {
 void Vertex::removeDegenerate() {
 	for (unsigned int i = 0; i < adjacentFaces.size(); i++) {
 		Face* temp = adjacentFaces[i];
-		if (temp->isUsed == false) {
+		if (temp->getIsUsed() == false) {
 			continue;
 		}
 		if ((temp)->isDegenerate() == true) {
-			adjacentFaces[i]->isUsed = false;
+			adjacentFaces[i]->setIsUsed(false);
 		}
 	}
 }
@@ -91,9 +147,9 @@ void Vertex::removeDegenerate() {
 void Vertex::setNormal() {
 	vec3 adjacentNormalSum;
 	for (unsigned int j = 0; j < adjacentFaces.size(); j++) {
-		if (adjacentFaces[j]->isUsed == false) continue;
+		if (adjacentFaces[j]->getIsUsed() == false) continue;
 		Face* temp = adjacentFaces[j];
-		adjacentNormalSum += (temp)->normal;
+		adjacentNormalSum += (temp)->getNormal();
 	}
 	normal = adjacentNormalSum;
 }
@@ -101,7 +157,7 @@ void Vertex::setNormal() {
 void Vertex::updateVertex() {
 	Q = mat4x4(0);
 	for (int i = 0; i < adjacentFaces.size(); i++) {
-		if (adjacentFaces[i]->isUsed == false) continue;
+		if (adjacentFaces[i]->getIsUsed() == false) continue;
 		Q = Q + adjacentFaces[i]->K;
 	}
 	setNormal();

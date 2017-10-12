@@ -18,7 +18,7 @@ MeshObject::MeshObject(const char* filename) {
 	for (unsigned int i = 0; i < vertexPositionList.size(); ++i) {
 		vec3 shiftedVertex = (vertexPositionList[i] - vec3(0.0f, avgY, avgZ)) * vec3(1.58f, 1.58f, 1.58f);
 		vertexPositionList[i] = shiftedVertex;
-		vertList[i]->position = shiftedVertex;
+		vertList[i]->setPosition(shiftedVertex);
 	}
 	v.clear();
 	//create each face with 3 vertices from the list and sets adjacencies of every vertex
@@ -55,7 +55,7 @@ void MeshObject::setVertices(std::vector<float>& v, std::ifstream& infile) {
 		if (v[1] < Ymin) Ymin = v[1]; if (v[1] > Ymax) Ymax = v[1];
 		if (v[2] < Zmin) Zmin = v[2]; if (v[2] > Zmax) Zmax = v[2];
 		Vertex *vert = new Vertex(v[0], v[1], v[2]);
-		vert->index = i;
+		vert->setIndex(i);
 		vertList.push_back(vert);
 		vertexPositionList.push_back(vec3(v[0], v[1], v[2]));
 		faceColorList.push_back(vec3(1, 1, 0));
@@ -77,18 +77,18 @@ void MeshObject::setFaces(std::vector<float>& v, std::ifstream& infile) {
 		vertexIndexList.push_back(v[3]);
 		//if ()
 		Face* face = new Face(vertList[v[1]], vertList[v[2]], vertList[v[3]]);
-		face->index = i;
+		face->setIndex(i);
 		faceList.push_back(face);
-		vertList[v[1]]->adjacentFaces.push_back(faceList[i]);
-		vertList[v[2]]->adjacentFaces.push_back(faceList[i]);
-		vertList[v[3]]->adjacentFaces.push_back(faceList[i]);
-		vertList[v[1]]->adjacentVertices.push_back(vertList[v[2]]);
-		vertList[v[1]]->adjacentVertices.push_back(vertList[v[3]]);
-		vertList[v[2]]->adjacentVertices.push_back(vertList[v[1]]);
-		vertList[v[2]]->adjacentVertices.push_back(vertList[v[3]]);
-		vertList[v[3]]->adjacentVertices.push_back(vertList[v[1]]);
-		vertList[v[3]]->adjacentVertices.push_back(vertList[v[2]]);
-		face->Color = vec3(1, 1, 0);
+		vertList[v[1]]->pushFace(faceList[i]);
+		vertList[v[2]]->pushFace(faceList[i]);
+		vertList[v[3]]->pushFace(faceList[i]);
+		vertList[v[1]]->pushVertex(vertList[v[2]]);
+		vertList[v[1]]->pushVertex(vertList[v[3]]);
+		vertList[v[2]]->pushVertex(vertList[v[1]]);
+		vertList[v[2]]->pushVertex(vertList[v[3]]);
+		vertList[v[3]]->pushVertex(vertList[v[1]]);
+		vertList[v[3]]->pushVertex(vertList[v[2]]);
+		face->setColor(vec3(1, 1, 0));
 		v.clear();
 	}
 }
@@ -97,14 +97,14 @@ int MeshObject::getNumFaces() {
 	return vertList.size();
 }
 
-bool areEqual(Face*& a, Face*& b) {
+bool areEqual(Face* a, Face* b) {
 	if (!a->isDegenerate() && !b->isDegenerate()) {
-		if (a->vertices[0]->index == b->vertices[0]->index || a->vertices[0]->index == b->vertices[1]->index ||
-			a->vertices[0]->index == b->vertices[2]->index) {
-			if (a->vertices[1]->index == b->vertices[0]->index || a->vertices[1]->index == b->vertices[1]->index ||
-				a->vertices[1]->index == b->vertices[2]->index) {
-				if (a->vertices[2]->index == b->vertices[0]->index || a->vertices[2]->index == b->vertices[1]->index ||
-					a->vertices[2]->index == b->vertices[2]->index) {
+		if (a->getVertex(0)->getIndex() == b->getVertex(0)->getIndex() || a->getVertex(0)->getIndex() == b->getVertex(1)->getIndex() ||
+			a->getVertex(0)->getIndex() == b->getVertex(2)->getIndex()) {
+			if (a->getVertex(1)->getIndex() == b->getVertex(0)->getIndex() || a->getVertex(1)->getIndex() == b->getVertex(1)->getIndex() ||
+				a->getVertex(1)->getIndex() == b->getVertex(2)->getIndex()) {
+				if (a->getVertex(2)->getIndex() == b->getVertex(0)->getIndex() || a->getVertex(2)->getIndex() == b->getVertex(1)->getIndex() ||
+					a->getVertex(2)->getIndex() == b->getVertex(2)->getIndex()) {
 					return true;
 				}
 			}
@@ -168,13 +168,13 @@ void MeshObject::setVertexNormals() {
 		}*/
 		vec3 adjacentNormalSum;
 
-		for (unsigned int j = 0; j < vertList[i]->adjacentFaces.size(); j++) {
-			if (vertList[i]->adjacentFaces[j]->isUsed == false) continue;
-			Face* temp = vertList[i]->adjacentFaces[j];
-			adjacentNormalSum += (temp)->normal;
+		for (unsigned int j = 0; j < vertList[i]->getAdjacentFaceListSize(); j++) {
+			if (vertList[i]->getFace(j)->getIsUsed() == false) continue;
+			Face* temp = vertList[i]->getFace(j);
+			adjacentNormalSum += (temp)->getNormal();
 		}
-		vertList[i]->normal = adjacentNormalSum * (float)(1.0f / vertList[i]->adjacentFaces.size());
-		normalsList.push_back(-vertList[i]->normal);
+		vertList[i]->getNormal() = adjacentNormalSum * (float)(1.0f / vertList[i]->getAdjacentFaceListSize());
+		normalsList.push_back(-vertList[i]->getNormal());
 	}
 }
 
@@ -187,61 +187,61 @@ void MeshObject::edgeCollapse(int vert1, int vert2) {
 	}
 	Vertex *vertex1 = vertList[vert1];
 	Vertex *vertex2 = vertList[vert2];
-	if (vertex1->isUsed == false || vertex2->isUsed == false) {
+	if (vertex1->getIsUsed() == false || vertex2->getIsUsed() == false) {
 		std::cout << "vertices not in use" << std::endl;
 	}
 	bool verticesConnected = false;
-	for (int i = 0; i < vertex1->adjacentVertices.size(); i++) {
-		if (vertex1->adjacentVertices[i]->index == vert2) verticesConnected = true;
+	for (int i = 0; i < vertex1->getAdjacentVertexListSize(); i++) {
+		if (vertex1->getVertex(i)->getIndex() == vert2) verticesConnected = true;
 	}
 	if (verticesConnected == false) {
 		std::cout << "vertices are not connected" << std::endl;
 		return;
 	}
-	double x = vertex1->position[0] + vertex2->position[0];
-	double y = vertex1->position[1] + vertex2->position[1];
-	double z = vertex1->position[2] + vertex2->position[2];
+	double x = vertex1->getPosition()[0] + vertex2->getPosition()[0];
+	double y = vertex1->getPosition()[1] + vertex2->getPosition()[1];
+	double z = vertex1->getPosition()[2] + vertex2->getPosition()[2];
 	//create new vertex between two collapsed vertices
 	Vertex *midpoint = new Vertex(x / 2.0, y / 2.0, z / 2.0);
 
 	midpoint->absorb(vertex1, vertex2);
-	midpoint->index = vertList.size();
+	midpoint->setIndex(vertList.size());
 	vertList.push_back(midpoint);
 	vertex1->collapsed(midpoint);
-	vertex1->replacedBy = midpoint;
-	vertList[vert1]->isUsed = false;
+	vertex1->setReplacedBy(midpoint);
+	vertList[vert1]->setIsUsed(false);
 	vertex2->collapsed(midpoint);
-	vertex2->replacedBy = midpoint;
-	vertList[vert2]->isUsed = false;
-	vertexPositionList.push_back(midpoint->position);
+	vertex2->setReplacedBy(midpoint);
+	vertList[vert2]->setIsUsed(false);
+	vertexPositionList.push_back(midpoint->getPosition());
 	faceColorList.push_back(vec3(1, 1, 0));
 	midpoint->cleanMesh();
-	for (int i = 0; i < midpoint->adjacentFaces.size(); i++) {
-		for (int j = i + 1; j < midpoint->adjacentFaces.size(); j++) {
-			if (midpoint->adjacentFaces[i]->isUsed && midpoint->adjacentFaces[j]->isUsed &&
-						areEqual(midpoint->adjacentFaces[i], midpoint->adjacentFaces[j])) {
-				midpoint->adjacentFaces[i]->setNotUsed();
-				midpoint->adjacentFaces[j]->setNotUsed();
+	for (int i = 0; i < midpoint->getAdjacentFaceListSize(); i++) {
+		for (int j = i + 1; j < midpoint->getAdjacentFaceListSize(); j++) {
+			if (midpoint->getFace(i)->getIsUsed() && midpoint->getFace(j)->getIsUsed() &&
+						areEqual(midpoint->getFace(i), midpoint->getFace(j))) {
+				midpoint->getFace(i)->setNotUsed();
+				midpoint->getFace(j)->setNotUsed();
 			}
 		}
 	}
-	normalsList.push_back(-midpoint->normal);
-	for (int i = 0; i < midpoint->adjacentVertices.size(); i++) {
-		if (midpoint->adjacentVertices[i]->isUsed) {
-			midpoint->adjacentVertices[i]->cleanMesh();
-			normalsList[midpoint->adjacentVertices[i]->index] = -midpoint->adjacentVertices[i]->normal;
+	normalsList.push_back(-midpoint->getNormal());
+	for (int i = 0; i < midpoint->getAdjacentVertexListSize(); i++) {
+		if (midpoint->getVertex(i)->getIsUsed()) {
+			midpoint->getVertex(i)->cleanMesh();
+			normalsList[midpoint->getVertex(i)->getIndex()] = -midpoint->getVertex(i)->getNormal();
 		}
 	}
-	for (int i = 0; i < midpoint->adjacentFaces.size(); i++) {
-		if (midpoint->adjacentFaces[i]->isUsed == false) {
-			vertexIndexList[3 * midpoint->adjacentFaces[i]->index] = -1;
-			vertexIndexList[3 * midpoint->adjacentFaces[i]->index + 1] = -1;
-			vertexIndexList[3 * midpoint->adjacentFaces[i]->index + 2] = -1;
+	for (int i = 0; i < midpoint->getAdjacentFaceListSize(); i++) {
+		if (midpoint->getFace(i)->getIsUsed() == false) {
+			vertexIndexList[3 * midpoint->getFace(i)->getIndex()] = -1;
+			vertexIndexList[3 * midpoint->getFace(i)->getIndex() + 1] = -1;
+			vertexIndexList[3 * midpoint->getFace(i)->getIndex() + 2] = -1;
 			continue;
 		}
-		vertexIndexList[3 * midpoint->adjacentFaces[i]->index] = midpoint->adjacentFaces[i]->vertices[0]->index;
-		vertexIndexList[3 * midpoint->adjacentFaces[i]->index + 1] = midpoint->adjacentFaces[i]->vertices[1]->index;
-		vertexIndexList[3 * midpoint->adjacentFaces[i]->index + 2] = midpoint->adjacentFaces[i]->vertices[2]->index;
+		vertexIndexList[3 * midpoint->getFace(i)->getIndex()] = midpoint->getFace(i)->getVertex(0)->getIndex();
+		vertexIndexList[3 * midpoint->getFace(i)->getIndex() + 1] = midpoint->getFace(i)->getVertex(1)->getIndex();
+		vertexIndexList[3 * midpoint->getFace(i)->getIndex() + 2] = midpoint->getFace(i)->getVertex(2)->getIndex();
 	}
 }
 
@@ -253,7 +253,7 @@ void MeshObject::undoCollapse(int vert1, int vert2) {
 	}
 	Vertex *vertex1 = vertList[vert1];
 	Vertex *vertex2 = vertList[vert2];
-	if (vertex1->isUsed || vertex2->isUsed) return;
+	if (vertex1->getIsUsed() || vertex2->getIsUsed()) return;
 	vertex1->revertVertex();
 	vertex2->revertVertex();
 
@@ -262,39 +262,39 @@ void MeshObject::undoCollapse(int vert1, int vert2) {
 	faceColorList.pop_back();
 	normalsList.pop_back();
 
-	for (int i = 0; i < vertex1->adjacentVertices.size(); i++) {
-		if (vertex1->adjacentVertices[i]->isUsed) {
-			vertex1->adjacentVertices[i]->cleanMesh();
-			normalsList[vertex1->adjacentVertices[i]->index] = -vertex1->adjacentVertices[i]->normal;
+	for (int i = 0; i < vertex1->getAdjacentVertexListSize(); i++) {
+		if (vertex1->getVertex(i)->getIsUsed()) {
+			vertex1->getVertex(i)->cleanMesh();
+			normalsList[vertex1->getVertex(i)->getIndex()] = -vertex1->getVertex(i)->getNormal();
 		}
 	}
-	for (int i = 0; i < vertex2->adjacentVertices.size(); i++) {
-		if (vertex2->adjacentVertices[i]->isUsed) {
-			vertex2->adjacentVertices[i]->cleanMesh();
-			normalsList[vertex2->adjacentVertices[i]->index] = -vertex2->adjacentVertices[i]->normal;
+	for (int i = 0; i < vertex2->getAdjacentVertexListSize(); i++) {
+		if (vertex2->getVertex(i)->getIsUsed()) {
+			vertex2->getVertex(i)->cleanMesh();
+			normalsList[vertex2->getVertex(i)->getIndex()] = -vertex2->getVertex(i)->getNormal();
 		}
 	}
-	for (int i = 0; i < vertex1->adjacentFaces.size(); i++) {
-		if (vertex1->adjacentFaces[i] == false) {
-			vertexIndexList[3 * vertex1->adjacentFaces[i]->index] = -1;
-			vertexIndexList[3 * vertex1->adjacentFaces[i]->index + 1] = -1;
-			vertexIndexList[3 * vertex1->adjacentFaces[i]->index + 2] = -1;
+	for (int i = 0; i < vertex1->getAdjacentFaceListSize(); i++) {
+		if (vertex1->getFace(i) == false) {
+			vertexIndexList[3 * vertex1->getFace(i)->getIndex()] = -1;
+			vertexIndexList[3 * vertex1->getFace(i)->getIndex() + 1] = -1;
+			vertexIndexList[3 * vertex1->getFace(i)->getIndex() + 2] = -1;
 			continue;
 		}
-		vertexIndexList[3 * vertex1->adjacentFaces[i]->index] = vertex1->adjacentFaces[i]->vertices[0]->index;
-		vertexIndexList[3 * vertex1->adjacentFaces[i]->index + 1] = vertex1->adjacentFaces[i]->vertices[1]->index;
-		vertexIndexList[3 * vertex1->adjacentFaces[i]->index + 2] = vertex1->adjacentFaces[i]->vertices[2]->index;
+		vertexIndexList[3 * vertex1->getFace(i)->getIndex()] = vertex1->getFace(i)->getVertex(0)->getIndex();
+		vertexIndexList[3 * vertex1->getFace(i)->getIndex() + 1] = vertex1->getFace(i)->getVertex(1)->getIndex();
+		vertexIndexList[3 * vertex1->getFace(i)->getIndex() + 2] = vertex1->getFace(i)->getVertex(2)->getIndex();
 	}
-	for (int i = 0; i < vertex2->adjacentFaces.size(); i++) {
-		if (vertex2->adjacentFaces[i] == false) {
-			vertexIndexList[3 * vertex2->adjacentFaces[i]->index] = -1;
-			vertexIndexList[3 * vertex2->adjacentFaces[i]->index + 1] = -1;
-			vertexIndexList[3 * vertex2->adjacentFaces[i]->index + 2] = -1;
+	for (int i = 0; i < vertex2->getAdjacentFaceListSize(); i++) {
+		if (vertex2->getFace(i) == false) {
+			vertexIndexList[3 * vertex2->getFace(i)->getIndex()] = -1;
+			vertexIndexList[3 * vertex2->getFace(i)->getIndex() + 1] = -1;
+			vertexIndexList[3 * vertex2->getFace(i)->getIndex() + 2] = -1;
 			continue;
 		}
-		vertexIndexList[3 * vertex2->adjacentFaces[i]->index] = vertex2->adjacentFaces[i]->vertices[0]->index;
-		vertexIndexList[3 * vertex2->adjacentFaces[i]->index + 1] = vertex2->adjacentFaces[i]->vertices[1]->index;
-		vertexIndexList[3 * vertex2->adjacentFaces[i]->index + 2] = vertex2->adjacentFaces[i]->vertices[2]->index;
+		vertexIndexList[3 * vertex2->getFace(i)->getIndex()] = vertex2->getFace(i)->getVertex(0)->getIndex();
+		vertexIndexList[3 * vertex2->getFace(i)->getIndex() + 1] = vertex2->getFace(i)->getVertex(1)->getIndex();
+		vertexIndexList[3 * vertex2->getFace(i)->getIndex() + 2] = vertex2->getFace(i)->getVertex(2)->getIndex();
 	}
 }
 
@@ -337,7 +337,7 @@ struct MeshObject::quadricContainer {
 	Vertex* first;
 	Vertex* second;
 	float error;
-	quadricContainer(Vertex*& a, Vertex*& b, float c) : first(a), second(b), error(c) {}
+	quadricContainer(Vertex* a, Vertex* b, float c) : first(a), second(b), error(c) {}
 };
 
 void MeshObject::printMatrix(mat4x4& m) {
@@ -355,13 +355,13 @@ struct MeshObject::Comp {
 		Vertex* E2V1 = b->first;
 		Vertex* E2V2 = b->second;
 
-		Vertex E1Mid = Vertex((E1V1->position[0] + E1V2->position[0]) / 2.0, (E1V1->position[1] + E1V2->position[1]) / 2.0, (E1V1->position[2] + E1V2->position[2]) / 2.0);
-		Vertex E2Mid = Vertex((E2V1->position[0] + E2V2->position[0]) / 2.0, (E2V1->position[1] + E2V2->position[1]) / 2.0, (E2V1->position[2] + E2V2->position[2]) / 2.0);
+		Vertex E1Mid = Vertex((E1V1->getPosition()[0] + E1V2->getPosition()[0]) / 2.0, (E1V1->getPosition()[1] + E1V2->getPosition()[1]) / 2.0, (E1V1->getPosition()[2] + E1V2->getPosition()[2]) / 2.0);
+		Vertex E2Mid = Vertex((E2V1->getPosition()[0] + E2V2->getPosition()[0]) / 2.0, (E2V1->getPosition()[1] + E2V2->getPosition()[1]) / 2.0, (E2V1->getPosition()[2] + E2V2->getPosition()[2]) / 2.0);
 
 		mat4x4 E1Q = E1V1->Q + E1V2->Q;
 		mat4x4 E2Q = E2V1->Q + E2V2->Q;
-		float E1Error = glm::dot((vec4(E1Mid.position, 1) * E1Q), vec4(E1Mid.position, 1));
-		float E2Error = glm::dot((vec4(E2Mid.position, 1) * E2Q), vec4(E2Mid.position, 1));
+		float E1Error = glm::dot((vec4(E1Mid.getPosition(), 1) * E1Q), vec4(E1Mid.getPosition(), 1));
+		float E2Error = glm::dot((vec4(E2Mid.getPosition(), 1) * E2Q), vec4(E2Mid.getPosition(), 1));
 
 		a->error = E1Error;
 		b->error = E2Error;
@@ -376,23 +376,26 @@ void MeshObject::quadricSimplification() {
 	for (int a = 0; a < simplificationIterations; a++) {
 		std::vector<quadricContainer*> heap;
 		for (int i = 0; i < vertList.size(); i++) {
-			if (vertList[i]->isUsed == false) continue;
-			for (int j = 0; j < vertList[i]->adjacentVertices.size(); j++) {
+			if (vertList[i]->getIsUsed() == false) continue;
+			for (int j = 0; j < vertList[i]->getAdjacentVertexListSize(); j++) {
 				float err = 0;
-				if (vertList[i]->adjacentVertices[j]->isUsed == true) heap.push_back(new quadricContainer(vertList[i], vertList[i]->adjacentVertices[j], err));
+				if (vertList[i]->getVertex(j)->getIsUsed() == true) heap.push_back(new quadricContainer(vertList[i], vertList[i]->getVertex(j), err));
 			}
 		}
 		if (heap.empty()) return;
 		std::make_heap(heap.begin(), heap.end(), Comp());
-		edgeCollapse(heap.front()->first->index, heap.front()->second->index);
-		unsimplificationOrder.push_front(heap.front()->second->index);
-		unsimplificationOrder.push_front(heap.front()->first->index);
+		edgeCollapse(heap.front()->first->getIndex(), heap.front()->second->getIndex());
+		unsimplificationOrder.push_front(heap.front()->second->getIndex());
+		unsimplificationOrder.push_front(heap.front()->first->getIndex());
 	}
 }
 
 void MeshObject::quadricUnsimplification() {
-	if (unsimplificationOrder.empty()) return;
 	for (int a = 0; a < simplificationIterations; a++) {
+		if (unsimplificationOrder.empty()) {
+			std::cout << "current model is at base LOD" << std::endl;
+			return;
+		}
 		int v1 = unsimplificationOrder.front();
 		unsimplificationOrder.pop_front();
 		int v2 = unsimplificationOrder.front();

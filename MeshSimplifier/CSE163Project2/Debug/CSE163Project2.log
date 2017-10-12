@@ -1,0 +1,4 @@
+﻿  Main.cpp
+c:\users\cody\documents\repo\meshsimplifierproject\meshsimplifier\cse163project2\main.cpp(218): warning C4101: 'numIterations': unreferenced local variable
+  CSE163Project2.vcxproj -> C:\Users\Cody\Documents\repo\MeshSimplifierProject\MeshSimplifier\Debug\CSE163Project2.exe
+  CSE163Project2.vcxproj -> C:\Users\Cody\Documents\repo\MeshSimplifierProject\MeshSimplifier\Debug\CSE163Project2.pdb (Partial PDB)

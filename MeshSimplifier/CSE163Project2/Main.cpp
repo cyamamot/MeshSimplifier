@@ -28,9 +28,6 @@ GLuint vertexshader, fragmentshader, shaderprogram;
 MeshObject *object;
 
 // Constants to set up lighting
-//const vec4 light_position(0, 15, 11, 1);    // Position of light 0
-//const vec4 light_position1(-5, 15, -15, 1);  // Position of light 1
-//const vec4 light_position2(0, -15, 8, 1);   //Position of 1ight 2
 const vec4 light_position(0, 5, 5, 1);    // Position of light 0
 const vec4 light_position1(0, 0, 0, 1);  // Position of light 1
 const vec4 light_position2(0, 0, 0, 1);   //Position of 1ight 2
@@ -310,9 +307,9 @@ void specialKey(int key, int x, int y) {
 			std::clock_t start;
 			double duration;
 			start = std::clock();
-			for (int i = 0; i < 25; i++) object->quadricSimplification();
+			object->quadricSimplification();
 			duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
-			std::cout << "done simplifying : " << duration << " --> " << object->getNumFaces() << std::endl;
+			std::cout << "done simplifying : " << duration << std::endl;
 		}
 		break;
 	case 102: //right
@@ -330,9 +327,9 @@ void specialKey(int key, int x, int y) {
 			std::clock_t start;
 			double duration;
 			start = std::clock();
-			for (int i = 0; i < 25; i++) object->quadricUnsimplification();
+			object->quadricUnsimplification();
 			duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
-			std::cout << "done unsimplifying : " << duration << " --> " << object->getNumFaces() << std::endl;
+			std::cout << "done unsimplifying : " << duration << std::endl;
 		}
 		break;
 	}
@@ -351,8 +348,6 @@ void instructions() {
 	std::cout << "input file name : ";
 	std::cin >> name;
 	PATH_TO_OFF_FILE = name.c_str();
-	//std::cout << PATH_TO_OFF_FILE << std::endl;
-	//PATH_TO_OFF_FILE = "./models/testpatch.txt";
 }
 
 int main(int argc, char* argv[]) {

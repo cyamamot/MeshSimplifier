@@ -5,14 +5,40 @@
 #include <algorithm>  
 #include <queue>
 
+
 MeshObject::MeshObject(const char* filename) {
 	//Constructor parses OFF format object file and creates each face and vertex
+	std::vector<float> v;
 	std::ifstream infile(filename);
+	setVertices(v, infile);
+
+	//centers object on screen by adjusting each vertex
+	float avgY = (Ymin + Ymax) / 2.0f - 0.02f;
+	float avgZ = (Zmin + Zmax) / 2.0f;
+	for (unsigned int i = 0; i < vertexPositionList.size(); ++i) {
+		vec3 shiftedVertex = (vertexPositionList[i] - vec3(0.0f, avgY, avgZ)) * vec3(1.58f, 1.58f, 1.58f);
+		vertexPositionList[i] = shiftedVertex;
+		vertList[i]->position = shiftedVertex;
+	}
+	v.clear();
+	//create each face with 3 vertices from the list and sets adjacencies of every vertex
+	setFaces(v, infile);
+	//removes repeated elements from the adjacency lists of each vertex
+	for (int i = 0; i < numVertices; i++) {
+		vertList[i]->cleanMesh();
+	}
+	setVertexNormals();
+
+
+	std::cout << "here" << std::endl;
+}
+
+void MeshObject::setVertices(std::vector<float>& v, std::ifstream& infile) {
+	//parse first two lines (in .off files they are data on the file, not vertex data)
 	if (!infile) return;
 	std::string line;
 	std::getline(infile, line);
 	std::getline(infile, line);
-	std::vector<float> v;
 	std::istringstream iss(line);
 	float n;
 	while (iss >> n) {
@@ -28,12 +54,9 @@ MeshObject::MeshObject(const char* filename) {
 		while (iss >> n) {
 			v.push_back(n);
 		}
-		if (v[0] < Xmin) Xmin = v[0];
-		if (v[0] > Xmax) Xmax = v[0];
-		if (v[1] < Ymin) Ymin = v[1];
-		if (v[1] > Ymax) Ymax = v[1];
-		if (v[2] < Zmin) Zmin = v[2];
-		if (v[2] > Zmax) Zmax = v[2];
+		if (v[0] < Xmin) Xmin = v[0]; if (v[0] > Xmax) Xmax = v[0];
+		if (v[1] < Ymin) Ymin = v[1]; if (v[1] > Ymax) Ymax = v[1];
+		if (v[2] < Zmin) Zmin = v[2]; if (v[2] > Zmax) Zmax = v[2];
 		Vertex *vert = new Vertex(v[0], v[1], v[2]);
 		vert->index = i;
 		vertList.push_back(vert);
@@ -41,16 +64,11 @@ MeshObject::MeshObject(const char* filename) {
 		faceColorList.push_back(vec3(1, 1, 0));
 		v.clear();
 	}
-	//centers object on screen by adjusting each vertex
-	float avgY = (Ymin + Ymax) / 2.0f - 0.02f;
-	float avgZ = (Zmin + Zmax) / 2.0f;
-	for (unsigned int i = 0; i < vertexPositionList.size(); ++i) {
-		vec3 shiftedVertex = (vertexPositionList[i] - vec3(0.0f, avgY, avgZ)) * vec3(1.58f, 1.58f, 1.58f);
-		vertexPositionList[i] = shiftedVertex;
-		vertList[i]->position = shiftedVertex;
-	}
-	v.clear();
-	//create each face with 3 vertices from the list and sets adjacencies of every vertex
+}
+
+void MeshObject::setFaces(std::vector<float>& v, std::ifstream& infile) {
+	std::string line;
+	float n;
 	for (int i = 0; i < numFaces; i++) {
 		std::getline(infile, line);
 		std::istringstream iss(line);
@@ -76,12 +94,6 @@ MeshObject::MeshObject(const char* filename) {
 		face->Color = vec3(1, 1, 0);
 		v.clear();
 	}
-	//removes repeated elements from the adjacency lists of each vertex
-	for (int i = 0; i < numVertices; i++) {
-		vertList[i]->cleanMesh();
-	}
-	setVertexNormals();
-	//helperPrinting();	
 }
 
 int MeshObject::getNumFaces() {
@@ -110,65 +122,6 @@ float MeshObject::norm() {
 	float maxY = std::max(Ymax, std::abs(Ymin));
 	float maxZ = std::max(Zmax, std::abs(Zmin));
 	return std::max(maxX, std::max(maxY, maxZ));
-}
-
-void MeshObject::helperPrinting() {
-	std::cout << std::endl;
-	std::cout << std::endl;
-	for (int i = 0; i < faceList.size(); i++) {
-		if (faceList[i]->isUsed == true) std::cout << "face " << i << " is still here" << std::endl;
-		else std::cout << "face " << i << " is COLLAPSED" << std::endl;
-	}
-	std::cout << "-------------------------------------------------------------------" << std::endl;
-	std::cout << "number of vertices : " << vertexPositionList.size() << " ---> number of faces : " << faceList.size() << " ---> number of indices : " << vertexIndexList.size() << std::endl;
-	for (unsigned int i = 0; i < vertList.size(); i++) {
-		if (vertList[i]->isUsed == false) {
-			std::cout << "vert " << i << " : was collapsed" << std::endl;
-			continue;
-		}
-		std::cout << "vert " << i << " : ";
-		for (int j = 0; j < vertList[i]->adjacentVertices.size(); j++) {
-			Vertex* temp = vertList[i]->adjacentVertices[j];
-			if (temp->isUsed == false) continue;
-			std::cout << (temp)->index << ", ";
-		}
-		std::cout << "  ------>  ";
-		for (unsigned int k = 0; k < vertList[i]->adjacentFaces.size(); k++) {
-			Face* temp = vertList[i]->adjacentFaces[k];
-			if (temp->isUsed == false) continue;
-			std::cout << (temp)->index << ", ";
-		}
-		std::cout << std::endl;
-	}
-	std::cout << "vertexPositionList : ";
-	for (int i = 0; i < vertexPositionList.size(); i++) {
-		std::cout << glm::to_string(vertexPositionList[i]) << ", ";
-	}
-	std::cout << std::endl;
-
-	std::cout << "faceList : ";
-	for (int i = 0; i < faceList.size(); i++) {
-		std::cout << faceList[i]->vertices[0]->index
-			<< faceList[i]->vertices[1]->index << faceList[i]->vertices[2]->index << " --- ";
-	}
-	std::cout << std::endl;
-
-	std::cout << "normalsList : ";
-	for (int i = 0; i < normalsList.size(); i++) {
-		std::cout << glm::to_string(normalsList[i]) << ", ";
-	}
-	std::cout << std::endl;
-	std::cout << "faceColorList : ";
-	for (int i = 0; i < faceColorList.size(); i++) {
-		std::cout << glm::to_string(faceColorList[i]) << ", ";
-	}
-	std::cout << std::endl;
-	std::cout << "vertexIndexList : ";
-	for (int i = 0; i < vertexIndexList.size(); i++) {
-		std::cout << (vertexIndexList[i]) << ", ";
-	}
-	std::cout << std::endl;
-	std::cout << std::endl;
 }
 
 void MeshObject::initialize(GLuint &VAO, GLuint &VBO, GLuint &EBO, GLuint &NBO, GLuint &CBO) {
@@ -228,6 +181,8 @@ void MeshObject::setVertexNormals() {
 	}
 }
 
+
+//collapses an edge between two specified vertices
 void MeshObject::edgeCollapse(int vert1, int vert2) {
 	if (vert1 >= vertList.size() || vert1 < 0 || vert2 >= vertList.size() || vert2 < 0) {
 		std::cout << "vertices with these indices are not present" << std::endl;
@@ -291,9 +246,9 @@ void MeshObject::edgeCollapse(int vert1, int vert2) {
 		vertexIndexList[3 * midpoint->adjacentFaces[i]->index + 1] = midpoint->adjacentFaces[i]->vertices[1]->index;
 		vertexIndexList[3 * midpoint->adjacentFaces[i]->index + 2] = midpoint->adjacentFaces[i]->vertices[2]->index;
 	}
-	//helperPrinting();
 }
 
+//undoes a collapsed edge
 void MeshObject::undoCollapse(int vert1, int vert2) {
 	if (vert1 >= vertList.size() || vert1 < 0 || vert2 >= vertList.size() || vert2 < 0) {
 		std::cout << "vertices with these indices are not present" << std::endl;
@@ -344,8 +299,6 @@ void MeshObject::undoCollapse(int vert1, int vert2) {
 		vertexIndexList[3 * vertex2->adjacentFaces[i]->index + 1] = vertex2->adjacentFaces[i]->vertices[1]->index;
 		vertexIndexList[3 * vertex2->adjacentFaces[i]->index + 2] = vertex2->adjacentFaces[i]->vertices[2]->index;
 	}
-	//setVertexNormals();
-	//helperPrinting();
 }
 
 void MeshObject::updateVBO(GLuint &VAO, GLuint &VBO, GLuint &EBO, GLuint &NBO, GLuint &CBO) {
@@ -420,28 +373,34 @@ struct MeshObject::Comp {
 	}
 };
 
+//uses quadric simplification from Garland's '97 paper on mesh simplification 
+//applies simplification method simplificationIterations(25) number of times
 void MeshObject::quadricSimplification() {
-	std::vector<quadricContainer*> heap;
-	for (int i = 0; i < vertList.size(); i++) {
-		if (vertList[i]->isUsed == false) continue;
-		for (int j = 0; j < vertList[i]->adjacentVertices.size(); j++) {
-			float err = 0;
-			if (vertList[i]->adjacentVertices[j]->isUsed == true) heap.push_back(new quadricContainer(vertList[i], vertList[i]->adjacentVertices[j], err));
+	for (int a = 0; a < simplificationIterations; a++) {
+		std::vector<quadricContainer*> heap;
+		for (int i = 0; i < vertList.size(); i++) {
+			if (vertList[i]->isUsed == false) continue;
+			for (int j = 0; j < vertList[i]->adjacentVertices.size(); j++) {
+				float err = 0;
+				if (vertList[i]->adjacentVertices[j]->isUsed == true) heap.push_back(new quadricContainer(vertList[i], vertList[i]->adjacentVertices[j], err));
+			}
 		}
+		if (heap.empty()) return;
+		std::make_heap(heap.begin(), heap.end(), Comp());
+		edgeCollapse(heap.front()->first->index, heap.front()->second->index);
+		unsimplificationOrder.push_front(heap.front()->second->index);
+		unsimplificationOrder.push_front(heap.front()->first->index);
 	}
-	if (heap.empty()) return;
-	std::make_heap(heap.begin(), heap.end(), Comp());
-	edgeCollapse(heap.front()->first->index, heap.front()->second->index);
-	unsimplificationOrder.push_front(heap.front()->second->index);
-	unsimplificationOrder.push_front(heap.front()->first->index);
 }
 
 void MeshObject::quadricUnsimplification() {
 	if (unsimplificationOrder.empty()) return;
-	int v1 = unsimplificationOrder.front();
-	unsimplificationOrder.pop_front();
-	int v2 = unsimplificationOrder.front();
-	unsimplificationOrder.pop_front();
-	undoCollapse(v1, v2);
+	for (int a = 0; a < simplificationIterations; a++) {
+		int v1 = unsimplificationOrder.front();
+		unsimplificationOrder.pop_front();
+		int v2 = unsimplificationOrder.front();
+		unsimplificationOrder.pop_front();
+		undoCollapse(v1, v2);
+	}
 }
 

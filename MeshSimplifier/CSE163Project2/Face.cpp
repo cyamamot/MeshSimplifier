@@ -1,6 +1,15 @@
 #include "Vertex.h"
 #include "Face.h"
 
+Face::Face(Vertex*& one, Vertex*& two, Vertex*& three) {
+	isUsed = true;
+	vertices.push_back(one);
+	vertices.push_back(two);
+	vertices.push_back(three);
+	vectorIndex = 0;
+	updateFace();
+}
+
 bool Face::isDegenerate() {
 	vec3 v0Position = (vertices[0])->position;
 	vec3 v1Position = (vertices[1])->position;
@@ -39,7 +48,4 @@ void Face::updateFace() {
 
 void Face::setNotUsed() {
 	isUsed = false;
-	//vertices[0]->isUsed = false;
-	//vertices[1]->isUsed = false;
-	//vertices[2]->isUsed = false;
 }

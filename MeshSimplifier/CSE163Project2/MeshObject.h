@@ -28,6 +28,8 @@ private:
 	double Xmin = 100000.0, Ymin = 100000.0, Zmin = 100000.0;
 	double Xmax = -100000.0, Ymax = -100000.0, Zmax = -100000.0;
 
+	int simplificationIterations = 25;
+
 public:
 	// Default associated variables
 	GLuint modelviewPos;
@@ -36,11 +38,13 @@ public:
 	//default constructor
 	MeshObject(const char* filename);
 
+	void setVertices(std::vector<float>& v, std::ifstream& infile);
+
+	void setFaces(std::vector<float>& v, std::ifstream& infile);
+
 	int getNumFaces();
 
 	float norm();
-
-	void helperPrinting();
 
 	void initialize(GLuint &VAO, GLuint &VBO, GLuint &EBO, GLuint &NBO, GLuint &CBO);
 

@@ -19,14 +19,7 @@ public:
 
 	mat4x4 K;
 
-	Face(Vertex*& one, Vertex*& two, Vertex*& three) {
-		isUsed = true;
-		vertices.push_back(one);
-		vertices.push_back(two);
-		vertices.push_back(three);
-		vectorIndex = 0;
-		updateFace();
-	}
+	Face(Vertex*& one, Vertex*& two, Vertex*& three);
 
 	//method to check if triangle is degenerate (has 2 same points)
 	bool isDegenerate();

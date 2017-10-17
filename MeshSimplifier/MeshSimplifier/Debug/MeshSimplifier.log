@@ -1,0 +1,19 @@
+﻿  Main.cpp
+c:\users\cody\documents\repo\meshsimplifierproject\meshsimplifier\meshsimplifier\main.cpp(223): warning C4101: 'numIterations': unreferenced local variable
+  Generating Code...
+  Compiling...
+  Vertex.cpp
+c:\users\cody\documents\repo\meshsimplifierproject\meshsimplifier\meshsimplifier\vertex.cpp(132): warning C4018: '<': signed/unsigned mismatch
+c:\users\cody\documents\repo\meshsimplifierproject\meshsimplifier\meshsimplifier\vertex.cpp(134): warning C4018: '<': signed/unsigned mismatch
+c:\users\cody\documents\repo\meshsimplifierproject\meshsimplifier\meshsimplifier\vertex.cpp(143): warning C4018: '<': signed/unsigned mismatch
+c:\users\cody\documents\repo\meshsimplifierproject\meshsimplifier\meshsimplifier\vertex.cpp(202): warning C4018: '<': signed/unsigned mismatch
+  MeshObject.cpp
+c:\users\cody\documents\repo\meshsimplifierproject\meshsimplifier\meshsimplifier\meshobject.cpp(183): warning C4018: '<': signed/unsigned mismatch
+c:\users\cody\documents\repo\meshsimplifierproject\meshsimplifier\meshsimplifier\meshobject.cpp(191): warning C4018: '<': signed/unsigned mismatch
+c:\users\cody\documents\repo\meshsimplifierproject\meshsimplifier\meshsimplifier\meshobject.cpp(205): warning C4018: '>=': signed/unsigned mismatch
+c:\users\cody\documents\repo\meshsimplifierproject\meshsimplifier\meshsimplifier\meshobject.cpp(283): warning C4018: '>=': signed/unsigned mismatch
+c:\users\cody\documents\repo\meshsimplifierproject\meshsimplifier\meshsimplifier\meshobject.cpp(427): warning C4018: '<': signed/unsigned mismatch
+  Face.cpp
+  Generating Code...
+  MeshSimplifier.vcxproj -> C:\Users\Cody\Documents\repo\MeshSimplifierProject\MeshSimplifier\Debug\MeshSimplifier.exe
+  MeshSimplifier.vcxproj -> C:\Users\Cody\Documents\repo\MeshSimplifierProject\MeshSimplifier\Debug\MeshSimplifier.pdb (Partial PDB)

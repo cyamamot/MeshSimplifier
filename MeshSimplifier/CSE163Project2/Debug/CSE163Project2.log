@@ -1,8 +1,0 @@
-﻿  MeshObject.cpp
-c:\users\cody\documents\repo\meshsimplifierproject\meshsimplifier\cse163project2\meshobject.cpp(164): warning C4018: '<': signed/unsigned mismatch
-c:\users\cody\documents\repo\meshsimplifierproject\meshsimplifier\cse163project2\meshobject.cpp(171): warning C4018: '<': signed/unsigned mismatch
-c:\users\cody\documents\repo\meshsimplifierproject\meshsimplifier\cse163project2\meshobject.cpp(184): warning C4018: '>=': signed/unsigned mismatch
-c:\users\cody\documents\repo\meshsimplifierproject\meshsimplifier\cse163project2\meshobject.cpp(250): warning C4018: '>=': signed/unsigned mismatch
-c:\users\cody\documents\repo\meshsimplifierproject\meshsimplifier\cse163project2\meshobject.cpp(378): warning C4018: '<': signed/unsigned mismatch
-  CSE163Project2.vcxproj -> C:\Users\Cody\Documents\repo\MeshSimplifierProject\MeshSimplifier\Debug\CSE163Project2.exe
-  CSE163Project2.vcxproj -> C:\Users\Cody\Documents\repo\MeshSimplifierProject\MeshSimplifier\Debug\CSE163Project2.pdb (Partial PDB)

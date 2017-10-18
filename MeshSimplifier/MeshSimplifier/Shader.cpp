@@ -5,7 +5,7 @@
 #include "Dependencies/glew/glew.h"
 #include "Dependencies/glut/glut.h"
 
-std::string textFileRead(const char * filename) {
+std::string ReadFile(const char * filename) {
 	std::string str, ret = "";
 	std::ifstream in;
 	in.open(filename);
@@ -24,7 +24,7 @@ std::string textFileRead(const char * filename) {
 	}
 }
 
-void programerrors(const GLint program) {
+void LogProgramError(const GLint program) {
 	GLint length;
 	GLchar * log;
 	glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
@@ -33,7 +33,7 @@ void programerrors(const GLint program) {
 	std::cout << "Compile Error, Log Below\n" << log << "\n";
 	delete[] log;
 }
-void shadererrors(const GLint shader) {
+void LogShaderError(const GLint shader) {
 	GLint length;
 	GLchar * log;
 	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
@@ -43,25 +43,25 @@ void shadererrors(const GLint shader) {
 	delete[] log;
 }
 
-GLuint initshaders(GLenum type, const char *filename)
+GLuint InitializeShaders(GLenum type, const char *filename)
 {
 	// Using GLSL shaders, OpenGL book, page 679 
 
 	GLuint shader = glCreateShader(type);
 	GLint compiled;
-	std::string str = textFileRead(filename);
+	std::string str = ReadFile(filename);
 	const char * cstr = str.c_str();
 	glShaderSource(shader, 1, &cstr, NULL);
 	glCompileShader(shader);
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
 	if (!compiled) {
-		shadererrors(shader);
+		LogShaderError(shader);
 		throw 3;
 	}
 	return shader;
 }
 
-GLuint initprogram(GLuint vertexshader, GLuint fragmentshader)
+GLuint InitializeProgram(GLuint vertexshader, GLuint fragmentshader)
 {
 	GLuint program = glCreateProgram();
 	GLint linked;
@@ -71,7 +71,7 @@ GLuint initprogram(GLuint vertexshader, GLuint fragmentshader)
 	glGetProgramiv(program, GL_LINK_STATUS, &linked);
 	if (linked) glUseProgram(program);
 	else {
-		programerrors(program);
+		LogProgramError(program);
 		throw 4;
 	}
 	return program;

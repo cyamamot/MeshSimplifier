@@ -135,9 +135,9 @@ void initialize()
 	glEnable(GL_DEPTH_TEST);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-	vertexshader = initshaders(GL_VERTEX_SHADER, "../MeshSimplifier/shaders/light.vert.glsl");
-	fragmentshader = initshaders(GL_FRAGMENT_SHADER, "../MeshSimplifier/shaders/light.frag.glsl");
-	shaderprogram = initprogram(vertexshader, fragmentshader);
+	vertexshader = InitializeShaders(GL_VERTEX_SHADER, "../MeshSimplifier/shaders/light.vert.glsl");
+	fragmentshader = InitializeShaders(GL_FRAGMENT_SHADER, "../MeshSimplifier/shaders/light.frag.glsl");
+	shaderprogram = InitializeProgram(vertexshader, fragmentshader);
 	islight = glGetUniformLocation(shaderprogram, "islight");
 	light0posn = glGetUniformLocation(shaderprogram, "light0posn");
 	light0color = glGetUniformLocation(shaderprogram, "light0color");

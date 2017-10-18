@@ -1,5 +1,5 @@
 /*
-Shader class provided by UCSD CSE167 courtesy Prof. Ravi Ramamoorthi
+Shader class used to open and write to shaders
 */
 #pragma once
 #include <iostream>
@@ -11,10 +11,10 @@ Shader class provided by UCSD CSE167 courtesy Prof. Ravi Ramamoorthi
 #ifndef __INCLUDESHADERS 
 #define __INCLUDESHADERS 
 
-std::string textFileRead(const char * filename);
-void programerrors(const GLint program);
-void shadererrors(const GLint shader);
-GLuint initshaders(GLenum type, const char * filename);
-GLuint initprogram(GLuint vertexshader, GLuint fragmentshader);
+std::string ReadFile(const char * filename);
+void LogProgramError(const GLint program);
+void LogShaderError(const GLint shader);
+GLuint InitializeShaders(GLenum type, const char * filename);
+GLuint InitializeProgram(GLuint vertexshader, GLuint fragmentshader);
 
 #endif 

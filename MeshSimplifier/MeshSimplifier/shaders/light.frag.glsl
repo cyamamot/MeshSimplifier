@@ -1,7 +1,5 @@
 # version 330 core
 
-// Note how the inputs to the fragment shader are the outputs (of the same name) of
-// the vertex shader.
 flat in vec3 Normal; 
 in vec4 Position;
 flat in vec4 Color;

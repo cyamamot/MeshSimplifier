@@ -56,7 +56,7 @@ GLuint shininess;
 GLuint color;
 
 int w = 500, h = 500;
-enum { rot, trans, moveCam, simplify} transop; // which operation to transform 
+enum { rot, trans, moveCam, simplify} mode; // which operation to transform 
 float tx, ty;
 int amount = 10;
 const float pi = 3.1415926f;
@@ -131,12 +131,10 @@ void initialize()
 	object = new MeshObject(PATH_TO_OFF_FILE);
 	eye = eyeinit;
 	up = upinit;
-
 	glEnable(GL_DEPTH_TEST);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-	vertexshader = InitializeShaders(GL_VERTEX_SHADER, "../MeshSimplifier/shaders/light.vert.glsl");
-	fragmentshader = InitializeShaders(GL_FRAGMENT_SHADER, "../MeshSimplifier/shaders/light.frag.glsl");
+	vertexshader = InitializeShaders(GL_VERTEX_SHADER, "shaders/light.vert.glsl");
+	fragmentshader = InitializeShaders(GL_FRAGMENT_SHADER, "shaders/light.frag.glsl");
 	shaderprogram = InitializeProgram(vertexshader, fragmentshader);
 	islight = glGetUniformLocation(shaderprogram, "islight");
 	light0posn = glGetUniformLocation(shaderprogram, "light0posn");
@@ -220,7 +218,6 @@ void keyboard(unsigned char key, int x, int y)
 {
 	std::string input1, input2;
 	int v1, v2;
-	int numIterations;
 	switch (key) {
 	case 27:  // Escape to quit
 		exit(0);
@@ -229,18 +226,18 @@ void keyboard(unsigned char key, int x, int y)
 		eye = eyeinit;
 		up = upinit;
 		tx = ty = 0.0;
-		transop = rot;
+		mode = rot;
 		break;
 	case 'r':
-		transop = rot;
+		mode = rot;
 		//std::cout << "Operation is set to View\n";
 		break;
 	case 't':
-		transop = trans;
+		mode = trans;
 		//std::cout << "Operation is set to Translate\n";
 		break;
 	case 'e':
-		transop = moveCam;
+		mode = moveCam;
 		//std::cout << "Operation is set to move camera\n";
 		break;
 	case 'l':
@@ -254,7 +251,7 @@ void keyboard(unsigned char key, int x, int y)
 		}
 		break;
 	case 'q':
-		transop = simplify;
+		mode = simplify;
 		break;
 	case 'i':
 		std::cout << "insert vertex 1 : ";
@@ -306,18 +303,18 @@ void specialKey(int key, int x, int y)
 {
 	switch (key) {
 	case 100: //left
-		if (transop == rot) left(amount, eye, up);
-		else if (transop == trans) tx -= amount * 0.125;
+		if (mode == rot) left(amount, eye, up);
+		else if (mode == trans) tx -= amount * 0.125;
 		break;
 	case 101: //up
-		if (transop == rot) turnUp(-amount, eye, up);
-		else if (transop == moveCam) 
+		if (mode == rot) turnUp(-amount, eye, up);
+		else if (mode == moveCam) 
 		{
 			vec3 move = eye * 0.1;
 			eye = eye - move;
 		}
-		else if (transop == trans) ty += amount * 0.125;
-		else if (transop == simplify) 
+		else if (mode == trans) ty += amount * 0.125;
+		else if (mode == simplify) 
 		{
 			std::clock_t start;
 			double duration;
@@ -329,18 +326,18 @@ void specialKey(int key, int x, int y)
 		}
 		break;
 	case 102: //right
-		if (transop == rot) left(-amount, eye, up);
-		else if (transop == trans) tx += amount * 0.125;
+		if (mode == rot) left(-amount, eye, up);
+		else if (mode == trans) tx += amount * 0.125;
 		break;
 	case 103: //down
-		if (transop == rot) turnUp(amount, eye, up);
-		else if (transop == moveCam) 
+		if (mode == rot) turnUp(amount, eye, up);
+		else if (mode == moveCam) 
 		{
 			vec3 move = eye * 0.1;
 			eye = eye + move;
 		}
-		else if (transop == trans) ty -= amount * 0.125;
-		else if (transop == simplify) 
+		else if (mode == trans) ty -= amount * 0.125;
+		else if (mode == simplify) 
 		{
 			std::clock_t start;
 			double duration;

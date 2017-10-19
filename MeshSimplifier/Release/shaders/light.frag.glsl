@@ -1,4 +1,9 @@
 # version 330 core
+// Note that since we are now switching to modern OpenGL, your OpenGL version should
+// be at least 3.1 (corresponding to GLSL version 140, which somehow has forward
+// compatibility to the above listed version 330). Do NOT change the version
+// directive to "version 140" or "version 150," as the shader will fail (due to modern
+// OpenGL not yet being core at that point in time).
 
 // Note how the inputs to the fragment shader are the outputs (of the same name) of
 // the vertex shader.
@@ -13,6 +18,10 @@ uniform int islight ; // are we lighting.
 
 uniform vec4 color; // RGB color normally used in glColor*
 
+// Assume light 0 and light 1 are both point lights
+// The actual light values are passed from the main OpenGL program. 
+// This could of course be fancier.  My goal is to illustrate a simple idea. 
+
 uniform vec4 light0posn ; 
 uniform vec4 light0color ; 
 uniform vec4 light1posn ; 
@@ -20,6 +29,9 @@ uniform vec4 light1color ;
 uniform vec4 light2posn ; 
 uniform vec4 light2color ; 
 
+// Now, set the material parameters.
+// I use ambient, diffuse, specular, shininess.  
+// But, the ambient is just additive and doesn't multiply the lights.  
 
 uniform vec4 ambient ; 
 uniform vec4 diffuse ; 
@@ -46,6 +58,7 @@ void main (void)
 	}
     else { 
         // The eye is always at (0,0,0) looking down -z axis 
+        // Also compute current fragment position and direction to eye 
 
         const vec3 eyepos = vec3(0,0,0) ; 
         vec3 mypos = Position.xyz / Position.w ; // Dehomogenize current location 

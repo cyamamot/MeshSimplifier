@@ -16,16 +16,19 @@ typedef glm::vec4 vec4;
 typedef glm::mat3x3 mat3x3;
 typedef glm::mat4x4 mat4x4;
 
-//ADJUSTABLE VARIABLES FOR DEBUG
 std::string name;
 const char* PATH_TO_OFF_FILE;
 float fovy = 70.0f * glm::pi<float>() / 180.0f;
+//used for rotating mesh
+vec3 LastPoint;
+//used for zooming in/out of mesh
+int LastScreenPoint;
 
 //Variables for Shaders
 GLuint defaultVAO, defaultVBO, defaultNBO, defaultEBO, defaultCBO;
 GLuint vertexshader, fragmentshader, shaderprogram;
 
-MeshObject *object;
+MeshObject *object = NULL;
 
 // Constants to set up lighting
 const vec4 light_position(0, 5, 5, 1);    // Position of light 0
@@ -56,20 +59,21 @@ GLuint shininess;
 GLuint color;
 
 int w = 500, h = 500;
-enum { rot, trans, moveCam, simplify} mode; // which operation to transform 
+enum { trans, simplify } mode; // which operation to transform 
+//amount to translate by
 float tx, ty;
-int amount = 10;
 const float pi = 3.1415926f;
 bool lightONOFF = false;
 
 //translation, scale matrix
-mat4x4 tr, sc;
+mat4x4 tr;
 //total transformed modelview matrix
 mat4x4 transf;
 
 vec3 eye; // The (regularly updated) vector coordinates of the eye location 
 vec3 up;  // The (regularly updated) vector coordinates of the up location 
-const vec3 eyeinit(0.0, 0.0, 7.0); // Initial eye position, also for resets
+const vec3 center(0, 0, 0);
+const vec3 eyeinit(10.0, 0.0, 0.0); // Initial eye position, also for resets
 const vec3 upinit(0.0, 1.0, 0.0); // Initial up position, also for resets
 const int amountinit = 5; //Initial step amount for camera movement, also for resets
 
@@ -116,13 +120,25 @@ mat4x4 translate(const float &tx, const float &ty, const float &tz)
 	return ret;
 }
 
-//Custom scale method
-mat4x4 scale(const float &sx, const float &sy, const float &sz)
+//custom rotate matrix method
+mat3x3 rotate(const float degrees, const vec3& axis)
 {
-	mat4x4 ret(1.0f);
-	ret[0][0] = sx;
-	ret[1][1] = sy;
-	ret[2][2] = sz;
+	mat3x3 ret;
+	if ((degrees != 0) && (axis[0] != NAN) && (axis[1] != NAN) && (axis[2] != NAN))
+	{
+		double rad = (degrees * pi) / 180.0;
+		glm::mat3 mat1(1 * cos(rad), 0, 0,
+			0, 1 * cos(rad), 0,
+			0, 0, 1 * cos(rad));
+		double v = 1 - cos(rad);
+		glm::mat3 mat2(axis.x * axis.x * v, axis.x * axis.y * v, axis.x * axis.z * v,
+			axis.x * axis.y * v, axis.y * axis.y * v, axis.y * axis.z * v,
+			axis.x * axis.z * v, axis.y * axis.z * v, axis.z * axis.z * v);
+		glm::mat3 mat3(0, axis.z * sin(rad), -axis.y * sin(rad),
+			-axis.z * sin(rad), 0, axis.x * sin(rad),
+			axis.y * sin(rad), -axis.x * sin(rad), 0);
+		ret = mat1 + mat2 + mat3;
+	}
 	return ret;
 }
 
@@ -180,13 +196,8 @@ void display()
 	glClearColor(0, 0, 1, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	const vec3 center(0, 0, 0);
 	modelview = glm::lookAt(eye, center, up);
-
-	// Set Light and Material properties 
-	// Lights are transformed by current modelview matrix. 
-	// The shader can't do this globally. 
-	// So we need to do so manually.  
+ 
 	transformvec(light_position, light0);
 	transformvec(light_position1, light1);
 	glUniform4fv(light0posn, 1, &light0[0]);
@@ -194,7 +205,7 @@ void display()
 	glUniform4fv(light1posn, 1, &light1[0]);
 	glUniform4fv(light1color, 1, &light_specular1[0]);
 	glUniform4fv(light2posn, 1, &light2[0]);
-	glUniform4fv(light2color, 1, &light_specular2[0]);//////////////////////////////////////////////////////////implement quadratics
+	glUniform4fv(light2color, 1, &light_specular2[0]);
 
 	glUniform4fv(ambient, 1, &small[0]);
 	glUniform4fv(diffuse, 1, &small[0]);
@@ -206,8 +217,7 @@ void display()
 	//perfomrs user specified scaling/translation on mesh
 	mat4x4 sc(1.0), tr(1.0), transf(1.0);
 	tr = translate(tx, ty, 0.0);
-	sc = scale(1.0f / object->norm(), 1.0f / object->norm(), 1.0f / object->norm());
-	transf = sc * tr * modelview;
+	transf = tr * modelview;
 
 	object->modelview = transf;
 	object->drawObject(defaultVAO, defaultVBO, defaultEBO, defaultNBO, defaultCBO);
@@ -217,28 +227,19 @@ void display()
 void keyboard(unsigned char key, int x, int y) 
 {
 	std::string input1, input2;
-	int v1, v2;
 	switch (key) {
 	case 27:  // Escape to quit
 		exit(0);
 		break;
-	case 's': // reset eye and up vectors, scale and translate. 
+	case 's': // reset eye and up vectors, and translate. 
 		eye = eyeinit;
 		up = upinit;
 		tx = ty = 0.0;
-		mode = rot;
-		break;
-	case 'r':
-		mode = rot;
-		//std::cout << "Operation is set to View\n";
+		mode = trans;
 		break;
 	case 't':
 		mode = trans;
 		//std::cout << "Operation is set to Translate\n";
-		break;
-	case 'e':
-		mode = moveCam;
-		//std::cout << "Operation is set to move camera\n";
 		break;
 	case 'l':
 		if (lightONOFF) {
@@ -252,68 +253,83 @@ void keyboard(unsigned char key, int x, int y)
 		break;
 	case 'q':
 		mode = simplify;
-		break;
-	case 'i':
-		std::cout << "insert vertex 1 : ";
-		std::cin >> v1;
-		std::cout << "insert vertex 2 : ";
-		std::cin >> v2;
-		object->edgeCollapse(v1, v2);
-		break;
 	}
 	glutPostRedisplay();
 }
 
-//custom rotate matrix method
-mat3x3 rotate(const float degrees, const vec3& axis) 
+vec3 MapTrackBall(int x, int y) 
 {
-	mat3x3 ret;  
-	double rad = (degrees * pi) / 180.0;
-	glm::mat3 mat1(1 * cos(rad), 0, 0,
-		0, 1 * cos(rad), 0,
-		0, 0, 1 * cos(rad));
-	double v = 1 - cos(rad);
-	glm::mat3 mat2(axis.x * axis.x * v, axis.x * axis.y * v, axis.x * axis.z * v,
-		axis.x * axis.y * v, axis.y * axis.y * v, axis.y * axis.z * v,
-		axis.x * axis.z * v, axis.y * axis.z * v, axis.z * axis.z * v);
-	glm::mat3 mat3(0, axis.z * sin(rad), -axis.y * sin(rad),
-		-axis.z * sin(rad), 0, axis.x * sin(rad),
-		axis.y * sin(rad), -axis.x * sin(rad), 0);
-	ret = mat1 + mat2 + mat3;
-	return ret;
+	vec3 NewPoint;
+	float dist;
+	NewPoint[0] = (2.0f * x - glutGet(GLUT_WINDOW_WIDTH)) / glutGet(GLUT_WINDOW_WIDTH);
+	NewPoint[1] = (glutGet(GLUT_WINDOW_HEIGHT) - 2.0f * y) / glutGet(GLUT_WINDOW_HEIGHT);
+	NewPoint[2] = 0;
+	dist = (glm::distance(NewPoint, center) < 1.0f) ? glm::distance(NewPoint, center) : 1.0f;
+	NewPoint[2] = sqrt(1.001f - dist * dist);
+	NewPoint = glm::normalize(NewPoint);
+	return NewPoint;
 }
 
-//rotate mesh left
-void left(float degrees, vec3& eye, vec3& up)
+void TrackBall(int x, int y) 
 {
-	eye = rotate(degrees, glm::normalize(up)) * eye;
-	up = rotate(degrees, glm::normalize(up)) * up;
+	vec3 NewPoint = MapTrackBall(x, y);
+	vec3 axis = glm::cross(NewPoint, LastPoint);
+	axis = glm::normalize(axis);
+	vec4 newaxis = { axis[0], axis[1], axis[2], 0.0f };
+	newaxis = glm::inverse(modelview) * newaxis;
+	axis = { newaxis[0], newaxis[1], newaxis[2] };
+	float angle = 50.0f * glm::distance((NewPoint - LastPoint), center);
+	eye = rotate(angle, axis) * eye;
+	up = rotate(angle, axis) * up;
+	LastPoint = NewPoint;
+	glutPostRedisplay();
 }
 
-//rotate mesh up
-void turnUp(float degrees, vec3& eye, vec3& up)
+void Zoom(int x, int y)
 {
-	glm::vec3 axis = glm::cross(up, eye);
-	glm::vec3 newAxis = glm::normalize(axis);
-	eye = rotate(-degrees, newAxis) * eye;
-	up = rotate(-degrees, newAxis) * up;
+	vec4 temp(0.0f, 0.0f, 0.5f, 0.0f);
+	temp = glm::inverse(modelview) * temp;
+	if (y > LastScreenPoint)
+	{
+		eye += vec3(temp[0], temp[1], temp[2]);
+	}
+	else if (y < LastScreenPoint)
+	{
+		eye -= vec3(temp[0], temp[1], temp[2]);
+	}
+	LastScreenPoint = y;
+	glutPostRedisplay();
+}
+
+void WhichButton(int button, int state, int x, int y)
+{
+	if (state == GLUT_DOWN) 
+	{
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			glutMotionFunc(TrackBall);
+		}
+		if (button == GLUT_RIGHT_BUTTON)
+		{
+			glutMotionFunc(Zoom);
+		}
+	}
+}
+
+void WatchMouse(int x, int y) 
+{
+	LastPoint = MapTrackBall(x, y);
+	LastScreenPoint = y;
 }
 
 void specialKey(int key, int x, int y) 
 {
 	switch (key) {
 	case 100: //left
-		if (mode == rot) left(amount, eye, up);
-		else if (mode == trans) tx -= amount * 0.125;
+		if (mode == trans) tx -= 1.0f;
 		break;
 	case 101: //up
-		if (mode == rot) turnUp(-amount, eye, up);
-		else if (mode == moveCam) 
-		{
-			vec3 move = eye * 0.1;
-			eye = eye - move;
-		}
-		else if (mode == trans) ty += amount * 0.125;
+		if (mode == trans) ty += 1.0f;
 		else if (mode == simplify) 
 		{
 			std::clock_t start;
@@ -326,17 +342,10 @@ void specialKey(int key, int x, int y)
 		}
 		break;
 	case 102: //right
-		if (mode == rot) left(-amount, eye, up);
-		else if (mode == trans) tx += amount * 0.125;
+		if (mode == trans) tx += 1.0f;
 		break;
 	case 103: //down
-		if (mode == rot) turnUp(amount, eye, up);
-		else if (mode == moveCam) 
-		{
-			vec3 move = eye * 0.1;
-			eye = eye + move;
-		}
-		else if (mode == trans) ty -= amount * 0.125;
+		if (mode == trans) ty -= 1.0f;
 		else if (mode == simplify) 
 		{
 			std::clock_t start;
@@ -354,13 +363,12 @@ void specialKey(int key, int x, int y)
 
 void instructions()
 {
+	std::cout << "Rotate mesh by holding down left mouse button and dragging" << std::endl;
+	std::cout << "Zoom in/out of mesh by holding down right mouse button and dragging up or down" << std::endl;
 	std::cout << "press 't' to translate object (up, down, left, right)" << std::endl;
-	std::cout << "press 'e' to move camera in and out (up, down)" << std::endl;
-	std::cout << "press 'r' to rotate object (up, down, left, right)" << std::endl;
 	std::cout << "press 's' to reset object" << std::endl;
 	std::cout << "press 'l' to toggle between wire mesh and shaded polygon mode" << std::endl;
 	std::cout << "press 'q' simplify/unsimplify mesh (up, down)" << std::endl;
-	std::cout << "press 'i' to perform an edge collapse between two specific vertices" << std::endl;
 	std::cout << std::endl;
 	std::cout << "CAUTION : If wrong filepath is specified, or if file is not of type .OFF, program will crash" << std::endl;;
 	std::cout << std::endl;
@@ -375,17 +383,18 @@ int main(int argc, char* argv[])
 	//initialize GLUT
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
-	glutCreateWindow("CSE163 - Homework 2");
+	glutCreateWindow("MeshSimplifier");
 
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
 	{
 		std::cerr << "Error: " << glewGetString(err) << std::endl;
 	}
-
 	initialize();
 	glutSpecialFunc(specialKey);
 	glutKeyboardFunc(keyboard);
+	glutMouseFunc(WhichButton);
+	glutPassiveMotionFunc(WatchMouse);
 	glutDisplayFunc(display);
 	glutReshapeFunc(reshape);
 	glutReshapeWindow(w, h);
